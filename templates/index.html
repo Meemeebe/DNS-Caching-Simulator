@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>DNS Cache Simulator</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <div class="sidebar">
+        <h2>◈ DNS<span>LAB</span></h2>
+
+        <p class="menu-title">MAIN MENU</p>
+
+        <a href="#dashboard">▦ Dashboard</a>
+        <a href="#lookup">⌕ DNS Lookup</a>
+        <a href="#cache">▤ DNS Cache</a>
+        <a href="#analytics">▥ Analytics</a>
+        <a href="#settings">⚙ Settings</a>
+
+        <div class="sidebar-bottom">
+            <p>COMPUTER NETWORKS PROJECT</p>
+            <small>DNS Resolution Simulator</small>
+        </div>
+    </div>
+
+
+    <main>
+
+        <header>
+            <div>
+                <h1>DNS Resolution & Caching</h1>
+                <p>Monitor, simulate and analyze DNS performance.</p>
+            </div>
+
+            <div class="status">
+                <span class="dot"></span>
+                SIMULATOR ONLINE
+            </div>
+        </header>
+
+
+        <!-- DASHBOARD -->
+
+        <section id="dashboard">
+
+            <h2>Overview</h2>
+
+            <div class="stats-grid">
+
+                <div class="stat-card">
+                    <p>Total Requests</p>
+                    <h2 id="totalRequests">0</h2>
+                    <small>DNS queries processed</small>
+                </div>
+
+                <div class="stat-card">
+                    <p>Cache Hits</p>
+                    <h2 id="cacheHits">0</h2>
+                    <small>Requests served from cache</small>
+                </div>
+
+                <div class="stat-card">
+                    <p>Cache Misses</p>
+                    <h2 id="cacheMisses">0</h2>
+                    <small>Requests sent to DNS server</small>
+                </div>
+
+                <div class="stat-card">
+                    <p>Hit Ratio</p>
+                    <h2 id="hitRatio">0%</h2>
+                    <small>Cache efficiency</small>
+                </div>
+
+            </div>
+            <div class="panel">
+                <h2>Live Cache Performance</h2>
+                <p>Real-time comparison of cache hits and misses.</p>
+
+                <div style="max-width: 400px; margin: auto;">
+                    <canvas id="cacheChart"></canvas>
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- DNS LOOKUP -->
+
+        <section id="lookup" class="panel">
+
+            <h2>DNS Lookup Simulator</h2>
+
+            <p>Enter a domain name to resolve its IP address.</p>
+
+            <div class="lookup-form">
+
+                <input type="text" id="domainInput" placeholder="e.g. google.com">
+
+                <button onclick="resolveDomain()">
+                    Resolve Domain →
+                </button>
+
+            </div>
+
+            <div id="lookupResult" class="result-box">
+                Your DNS resolution result will appear here.
+            </div>
+
+            <p class="latency-info">
+                Latest Lookup Latency:
+                <strong id="latestLatency">—</strong>
+            </p>
+
+        </section>
+
+
+        <!-- CACHE TABLE -->
+
+        <section id="cache" class="panel">
+
+            <div class="section-heading">
+                <div>
+                    <h2>DNS Cache Manager</h2>
+                    <p>Currently stored DNS records</p>
+                </div>
+
+                <button class="secondary-btn" onclick="clearCache()">
+                    Clear Cache
+                </button>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>DOMAIN</th>
+                            <th>IP ADDRESS</th>
+                            <th>REMAINING TTL</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="cacheTable">
+                        <tr>
+                            <td colspan="3">No cached records yet.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </section>
+
+
+        <!-- ANALYTICS -->
+
+        <!-- ANALYTICS -->
+
+        <section id="analytics" class="panel">
+
+            <div class="section-heading">
+                <div>
+                    <h2>Performance Analytics</h2>
+                    <p>Experimental comparison of cached and uncached DNS requests</p>
+                </div>
+
+                <button onclick="runExperiments()">
+                    Run Experiments →
+                </button>
+            </div>
+
+            <!-- EXPERIMENT SUMMARY -->
+
+            <div id="experimentResults" style="display:none">
+
+                <div class="stats-grid experiment-stats">
+
+                    <div class="stat-card">
+                        <p>Uncached Avg. Latency</p>
+                        <h2 id="uncachedAvg">0 ms</h2>
+                    </div>
+
+                    <div class="stat-card">
+                        <p>Cached Avg. Latency</p>
+                        <h2 id="cachedAvg">0 ms</h2>
+                    </div>
+
+                    <div class="stat-card">
+                        <p>Cache Hit Ratio</p>
+                        <h2 id="experimentHitRatio">0%</h2>
+                    </div>
+
+                    <div class="stat-card">
+                        <p>Latency Reduction</p>
+                        <h2 id="latencyReduction">0%</h2>
+                    </div>
+
+                </div>
+
+                <!-- GENERATED GRAPHS -->
+
+                <h3 class="experiment-heading">
+                    Generated Experimental Graphs
+                </h3>
+
+                <div class="experiment-graphs">
+
+                    <div class="graph-card">
+                        <h3>Average Latency Comparison</h3>
+
+                        <img id="latencyGraph" src="" alt="Cached vs uncached latency graph">
+                    </div>
+
+                    <div class="graph-card">
+                        <h3>Cache Hits and Misses</h3>
+
+                        <img id="cacheGraph" src="" alt="Cache performance graph">
+                    </div>
+
+                    <div class="graph-card full-graph">
+                        <h3>Request-wise Latency Comparison</h3>
+
+                        <img id="requestGraph" src="" alt="Request-wise latency graph">
+                    </div>
+
+                </div>
+
+                <!-- EXPERIMENTAL TABLE -->
+
+                <h3 class="experiment-heading">
+                    Experimental Results
+                </h3>
+
+                <div class="table-wrapper">
+
+                    <table>
+
+                        <thead>
+                            <tr>
+                                <th>PARAMETER</th>
+                                <th>WITHOUT CACHE</th>
+                                <th>WITH CACHE</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="experimentTable"></tbody>
+
+                    </table>
+
+                </div>
+
+                <!-- EXPORT -->
+
+                <div class="export-buttons">
+
+                    <a href="/results/latency_results.csv" download>
+                        Download CSV
+                    </a>
+
+                    <a href="/results/latency_comparison.png" download>
+                        Download Latency Graph
+                    </a>
+
+                    <a href="/results/cache_performance.png" download>
+                        Download Cache Graph
+                    </a>
+
+                    <a href="/results/request_latency.png" download>
+                        Download Request Graph
+                    </a>
+
+                </div>
+
+            </div>
+
+            <div id="experimentMessage">
+                Click "Run Experiments" to generate experimental
+                results, comparison tables and graphs.
+            </div>
+
+        </section>
+
+
+
+        <!-- SETTINGS -->
+
+        <section id="settings" class="panel">
+
+            <h2>Configuration</h2>
+
+            <p>Configure your DNS simulation parameters.</p>
+
+            <div class="settings-form">
+
+                <label>Time To Live (seconds)</label>
+                <input type="number" id="ttlInput" value="10" min="0.01" step="any">
+
+                <label>DNS Server Delay (seconds)</label>
+                <input type="number" id="delayInput" value="0.1" min="0" step="any">
+
+                <button onclick="updateConfig()">
+                    Save Configuration
+                </button>
+
+            </div>
+
+            <p id="configMessage"></p>
+
+        </section>
+
+        <footer>
+            DNS Resolution and Caching Simulator |
+            Computer Networks Assignment
+        </footer>
+
+    </main>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+
+</html>

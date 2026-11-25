@@ -2,6 +2,10 @@
 import csv
 import os
 import statistics
+
+import matplotlib
+matplotlib.use("Agg")
+
 import matplotlib.pyplot as plt
 
 from dns_resolver import DNSResolver
@@ -21,9 +25,7 @@ def run_experiments():
 
     requests = domains * 10
 
-    # -------------------------------
-    # EXPERIMENT 1: WITHOUT CACHING
-    # -------------------------------
+    # EXPERIMENT 1: WITHOUT CACHE
 
     uncached_resolver = DNSResolver(
         ttl=60,
@@ -41,9 +43,7 @@ def run_experiments():
 
         uncached_times.append(latency)
 
-    # -------------------------------
-    # EXPERIMENT 2: WITH CACHING
-    # -------------------------------
+    # EXPERIMENT 2: WITH CACHE
 
     cached_resolver = DNSResolver(
         ttl=60,
@@ -51,6 +51,7 @@ def run_experiments():
     )
 
     cached_times = []
+    statuses = []
 
     for domain in requests:
 
@@ -60,57 +61,29 @@ def run_experiments():
         )
 
         cached_times.append(latency)
+        statuses.append(status)
 
-    # -------------------------------
-    # CALCULATE RESULTS
-    # -------------------------------
+    # CALCULATE STATISTICS
 
     avg_uncached = statistics.mean(uncached_times)
     avg_cached = statistics.mean(cached_times)
 
     reduction = (
         (avg_uncached - avg_cached) /
-        avg_uncached
-    ) * 100
+        avg_uncached * 100
+    ) if avg_uncached > 0 else 0
 
-    hit_ratio = (
-        cached_resolver.cache_hits /
-        len(requests)
-    ) * 100
+    hits = cached_resolver.cache_hits
+    misses = cached_resolver.cache_misses
 
-    print("\n====== EXPERIMENTAL RESULTS ======")
+    hit_ratio = hits / len(requests) * 100
+    miss_ratio = misses / len(requests) * 100
 
-    print("Total requests:", len(requests))
+    # SAVE CSV
 
-    print(
-        "Average uncached latency:",
-        round(avg_uncached, 3), "ms"
-    )
+    csv_path = "results/latency_results.csv"
 
-    print(
-        "Average cached latency:",
-        round(avg_cached, 3), "ms"
-    )
-
-    print(
-        "Latency reduction:",
-        round(reduction, 2), "%"
-    )
-
-    print(
-        "Cache hit ratio:",
-        round(hit_ratio, 2), "%"
-    )
-
-    # -------------------------------
-    # SAVE DATA TO CSV
-    # -------------------------------
-
-    with open(
-        "results/latency_results.csv",
-        "w",
-        newline=""
-    ) as file:
+    with open(csv_path, "w", newline="") as file:
 
         writer = csv.writer(file)
 
@@ -118,7 +91,8 @@ def run_experiments():
             "Request Number",
             "Domain",
             "Uncached Latency (ms)",
-            "Cached Latency (ms)"
+            "Cached Latency (ms)",
+            "Cache Status"
         ])
 
         for i, domain in enumerate(requests):
@@ -127,14 +101,13 @@ def run_experiments():
                 i + 1,
                 domain,
                 round(uncached_times[i], 3),
-                round(cached_times[i], 3)
+                round(cached_times[i], 3),
+                statuses[i]
             ])
 
-    # -------------------------------
     # GRAPH 1: AVERAGE LATENCY
-    # -------------------------------
 
-    plt.figure(figsize=(7, 5))
+    plt.figure(figsize=(8, 5))
 
     plt.bar(
         ["Without Cache", "With Cache"],
@@ -144,34 +117,83 @@ def run_experiments():
     plt.ylabel("Average Latency (ms)")
     plt.title("DNS Lookup Latency Comparison")
 
-    plt.savefig("results/latency_comparison.png")
-    plt.show()
+    plt.tight_layout()
+    plt.savefig("results/latency_comparison.png", dpi=150)
+    plt.close()
 
-    # -------------------------------
-    # GRAPH 2: CACHE HIT RATIO
-    # -------------------------------
+    # GRAPH 2: CACHE PERFORMANCE
 
     plt.figure(figsize=(7, 5))
 
     plt.bar(
         ["Cache Hits", "Cache Misses"],
-        [
-            cached_resolver.cache_hits,
-            cached_resolver.cache_misses
-        ]
+        [hits, misses]
     )
 
     plt.ylabel("Number of Requests")
     plt.title("DNS Cache Performance")
 
-    plt.savefig("results/cache_performance.png")
-    plt.show()
+    plt.tight_layout()
+    plt.savefig("results/cache_performance.png", dpi=150)
+    plt.close()
 
-    print("\nFiles saved inside results folder.")
-    print("1. latency_results.csv")
-    print("2. latency_comparison.png")
-    print("3. cache_performance.png")
+    # GRAPH 3: REQUEST-WISE LATENCY
+
+    plt.figure(figsize=(10, 5))
+
+    plt.plot(
+        range(1, len(requests) + 1),
+        uncached_times,
+        label="Without Cache",
+        marker="."
+    )
+
+    plt.plot(
+        range(1, len(requests) + 1),
+        cached_times,
+        label="With Cache",
+        marker="."
+    )
+
+    plt.xlabel("Request Number")
+    plt.ylabel("Latency (ms)")
+    plt.title("Request-wise DNS Latency")
+    plt.legend()
+
+    plt.tight_layout()
+    plt.savefig("results/request_latency.png", dpi=150)
+    plt.close()
+
+    # RETURN RESULTS TO FLASK
+
+    return {
+        "total_requests": len(requests),
+        "cache_hits": hits,
+        "cache_misses": misses,
+        "hit_ratio": round(hit_ratio, 2),
+        "miss_ratio": round(miss_ratio, 2),
+        "avg_uncached": round(avg_uncached, 3),
+        "avg_cached": round(avg_cached, 3),
+        "latency_reduction": round(reduction, 2),
+
+        "uncached_times": [
+            round(x, 3) for x in uncached_times
+        ],
+
+        "cached_times": [
+            round(x, 3) for x in cached_times
+        ],
+
+        "domains": requests,
+        "statuses": statuses
+    }
 
 
 if __name__ == "__main__":
-    run_experiments()
+
+    results = run_experiments()
+
+    print("\nEXPERIMENT RESULTS")
+    print(results)
+
+    print("\nGraphs and CSV saved in results/")
